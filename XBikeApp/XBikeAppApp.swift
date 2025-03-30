@@ -10,10 +10,15 @@ import SwiftUI
 @main
 struct XBikeAppApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @AppStorage(Constants.Configuration.onboardingStorage) private var hasSeenOnboarding = false
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if hasSeenOnboarding {
+                ContentView()
+            } else {
+                OnboardingView()
+            }
         }
     }
 }
