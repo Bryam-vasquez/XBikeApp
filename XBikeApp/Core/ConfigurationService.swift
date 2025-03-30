@@ -15,7 +15,7 @@ final class ConfigurationService: ConfigurationServiceProtocol {
     private let config: [String: Any]
     
     init(bundle: Bundle = .main) {
-        if let url = bundle.url(forResource: "GoogleMapsConfiguration", withExtension: "plist"),
+        if let url = bundle.url(forResource: Constants.Configuration.googleInfoPlist, withExtension: Constants.Configuration.plistExtension),
            let data = try? Data(contentsOf: url),
            let config = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any] {
             self.config = config
@@ -29,6 +29,6 @@ final class ConfigurationService: ConfigurationServiceProtocol {
     }
     
     var googleMapsAPIKey: String? {
-        return config["GOOGLE_MAPS_API_KEY"] as? String
+        return config[Constants.Configuration.googleApiKey] as? String
     }
 }
