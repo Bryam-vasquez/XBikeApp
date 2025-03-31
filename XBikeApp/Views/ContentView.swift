@@ -6,16 +6,25 @@
 //
 
 import SwiftUI
+import Combine
 
 struct ContentView: View {
+    private var locationService = CoreLocationService()
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            CurrentRideView()
+                .tabItem {
+                    Label("Current Ride", image: "")
+                }
+            
+            Color(.blue)
+                .tabItem {
+                    Label("My Progress", image: "")
+                }
         }
-        .padding()
+        .onAppear {
+            locationService.requestAuthorization()
+        }
     }
 }
 

@@ -12,6 +12,10 @@ struct XBikeAppApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @AppStorage(Constants.Configuration.onboardingStorage) private var hasSeenOnboarding = false
     
+    init() {
+        Appearance.setup()
+    }
+    
     var body: some Scene {
         WindowGroup {
             if hasSeenOnboarding {
