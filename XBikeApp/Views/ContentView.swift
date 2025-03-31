@@ -9,21 +9,18 @@ import SwiftUI
 import Combine
 
 struct ContentView: View {
-    private var locationService = CoreLocationService()
+    private var locationService = LocationService()
     var body: some View {
         TabView {
             CurrentRideView()
                 .tabItem {
                     Label("Current Ride", image: "")
-                }
+                }.tint(.orange)
             
-            Color(.blue)
+            MyProgressView(rideRepository: CoreDataRideRepository())
                 .tabItem {
                     Label("My Progress", image: "")
-                }
-        }
-        .onAppear {
-            locationService.requestAuthorization()
+                }.tint(.orange)
         }
     }
 }

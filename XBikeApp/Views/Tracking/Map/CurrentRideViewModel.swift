@@ -12,46 +12,48 @@ class CurrentRideViewModel: ObservableObject {
     @Published var isTracking: Bool = false
     @Published var elapsedTimeText: String = TextConstants.CurrentRide.elapsedTimeText
     @Published var distanceText: String = TextConstants.CurrentRide.distanceText
+    @Published var lastKnownCoordinate: CLLocationCoordinate2D?
     @Published var routeCoordinates: [CLLocationCoordinate2D] = []
     
     var ride: Ride?
-    private var cancellables = Set<AnyCancellable>()
     
-    private let locationService: LocationService
+    private let locationService: LocationServiceProtocol
     private let rideRepository: RideRepository
     
     private var timer: Cancellable?
     
-    init(locationService: LocationService = CoreLocationService(),
+    init(locationService: LocationService = LocationService(),
          rideRepository: RideRepository = CoreDataRideRepository()) {
         self.locationService = locationService
         self.rideRepository = rideRepository
         
-        self.locationService.requestAuthorization()
-        
-        locationService.locationPublisher
-            .receive(on: DispatchQueue.main) 
-            .sink { [weak self] location in
-                self?.handleLocationUpdate(location)
-            }
-            .store(in: &cancellables)
+        locationService.onLocationUpdate = { [weak self] coordinate in
+            guard let self = self else { return }
+            let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+            self.handleLocationUpdate(location)
+        }
+        locationService.startTracking()
     }
     
     func startRide() {
-        locationService.requestAuthorization()
-        ride = Ride(startTime: Date(), endTime: nil, startAddress: nil, endAddress: nil, totalDistance: 0, coordinates: [])
+        ride = Ride(startTime: Date(), endTime: nil, duration: TimeInterval(), startAddress: nil, endAddress: nil, totalDistance: 0, coordinates: [])
         routeCoordinates.removeAll()
         distanceText = TextConstants.CurrentRide.distanceText
         isTracking = true
         startTimer()
-        locationService.startUpdating()
+        locationService.startTracking()
     }
     
     func stopRide() {
         guard var ride = ride else { return }
-        locationService.stopUpdating()
+
+        locationService.stopTracking()
         stopTimer()
+
         ride.endTime = Date()
+        ride.duration = ride.endTime!.timeIntervalSince(ride.startTime)
+
+        self.ride = ride
         isTracking = false
         elapsedTimeText = formatTime(ride.duration)
     }
@@ -62,9 +64,9 @@ class CurrentRideViewModel: ObservableObject {
             guard let self = self else { return }
             
             switch result {
-            case .success(let success):
+            case .success(_):
                 self.ride = nil
-            case .failure(let failure):
+            case .failure(_):
                 self.ride = nil
             }
             
@@ -80,6 +82,7 @@ class CurrentRideViewModel: ObservableObject {
     // MARK: - Private helpers
     
     private func handleLocationUpdate(_ location: CLLocation) {
+        lastKnownCoordinate = location.coordinate
         guard isTracking, var currentRide = ride else { return }
         
         let coord = location.coordinate

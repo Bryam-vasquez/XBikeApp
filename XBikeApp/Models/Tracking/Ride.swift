@@ -11,10 +11,7 @@ import CoreLocation
 struct Ride {
     let startTime: Date
     var endTime: Date?
-    var duration: TimeInterval {
-        guard let end = endTime else { return Date().timeIntervalSince(startTime) }
-        return end.timeIntervalSince(startTime)
-    }
+    var duration: TimeInterval
     var startAddress: String?
     var endAddress: String?
     var totalDistance: CLLocationDistance
