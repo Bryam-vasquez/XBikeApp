@@ -5,13 +5,6 @@
 //  Created by Juan Diego Olivas Maldonado on 30/03/25.
 //
 
-//
-//  RideRepository.swift
-//  XBikeApp
-//
-//  Created by Juan Diego Olivas Maldonado on 30/03/25.
-//
-
 import Foundation
 import CoreData
 import CoreLocation
@@ -44,30 +37,42 @@ class CoreDataRideRepository: RideRepository {
             completion(.failure(NSError(domain: "RideRepository", code: 1, userInfo: [NSLocalizedDescriptionKey: "Missing coordinates"])))
             return
         }
-        
-        geocoder.reverseGeocode(coordinate: startCoord) { [weak self] startAddress in
-            self?.geocoder.reverseGeocode(coordinate: endCoord) { endAddress in
-                guard let self = self else { return }
 
-                let entity = RideEntity(context: self.context)
-                entity.startTime = ride.startTime
-                entity.endTime = ride.endTime
-                entity.duration = ride.duration
-                entity.distance = ride.totalDistance
-                entity.startAddress = startAddress
-                entity.endAddress = endAddress
-                
-                let coordsData = try? JSONEncoder().encode(
-                    ride.coordinates.map { ["lat": $0.latitude, "lng": $0.longitude] }
-                )
-                entity.routeData = coordsData
-                
-                do {
-                    try self.context.save()
-                    completion(.success(()))
-                } catch {
-                    completion(.failure(error))
-                }
+        let dispatchGroup = DispatchGroup()
+        var startAddress: String?
+        var endAddress: String?
+        
+        dispatchGroup.enter()
+        geocoder.reverseGeocode(coordinate: startCoord) { address in
+            startAddress = address
+            dispatchGroup.leave()
+        }
+        
+        dispatchGroup.enter()
+        geocoder.reverseGeocode(coordinate: endCoord) { address in
+            endAddress = address
+            dispatchGroup.leave()
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            let entity = RideEntity(context: self.context)
+            entity.startTime = ride.startTime
+            entity.endTime = ride.endTime
+            entity.duration = ride.duration
+            entity.distance = ride.totalDistance
+            entity.startAddress = startAddress
+            entity.endAddress = endAddress
+            
+            let coordsData = try? JSONEncoder().encode(
+                ride.coordinates.map { ["lat": $0.latitude, "lng": $0.longitude] }
+            )
+            entity.routeData = coordsData
+            
+            do {
+                try self.context.save()
+                completion(.success(()))
+            } catch {
+                completion(.failure(error))
             }
         }
     }
@@ -82,6 +87,7 @@ class CoreDataRideRepository: RideRepository {
                 return Ride(
                     startTime: entity.startTime ?? Date(),
                     endTime: entity.endTime,
+                    duration: entity.duration, 
                     startAddress: entity.startAddress,
                     endAddress: entity.endAddress,
                     totalDistance: entity.distance,
@@ -104,8 +110,6 @@ class CoreDataRideRepository: RideRepository {
         }
     }
 }
-
-// MARK: - Codable Helper
 
 struct CoordinateJSON: Codable {
     let lat: Double

@@ -8,47 +8,48 @@
 import Combine
 import CoreLocation
 
-protocol LocationService {
-    var locationPublisher: AnyPublisher<CLLocation, Never> { get }
-    func requestAuthorization()
-    func startUpdating()
-    func stopUpdating()
+protocol LocationServiceProtocol {
+    var onLocationUpdate: ((CLLocationCoordinate2D) -> Void)? { get set }
+    func startTracking()
+    func stopTracking()
 }
 
-class CoreLocationService: NSObject, CLLocationManagerDelegate, LocationService {
+class LocationService: NSObject, LocationServiceProtocol, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
-    private let locationSubject = PassthroughSubject<CLLocation, Never>()
-    var locationPublisher: AnyPublisher<CLLocation, Never> {
-        locationSubject.eraseToAnyPublisher()
-    }
+    var onLocationUpdate: ((CLLocationCoordinate2D) -> Void)?
     
     override init() {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBest
-        manager.allowsBackgroundLocationUpdates = true
-        manager.pausesLocationUpdatesAutomatically = false
     }
     
-    func requestAuthorization() {
-        manager.requestWhenInUseAuthorization()
-        manager.requestAlwaysAuthorization()
+    func startTracking() {
+        if manager.authorizationStatus == .notDetermined {
+            manager.requestWhenInUseAuthorization()
+        }
+        
+        if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways {
+            manager.startUpdatingLocation()
+        }
     }
     
-    func startUpdating() {
-        manager.startUpdatingLocation()
-    }
-    
-    func stopUpdating() {
+    func stopTracking() {
         manager.stopUpdatingLocation()
     }
     
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let loc = locations.last else { return }
-        locationSubject.send(loc)  // emitir la nueva ubicación
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        if manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways {
+            manager.startUpdatingLocation()
+        }
     }
     
-    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let newLocation = locations.last else { return }
+        let coord = newLocation.coordinate
+        DispatchQueue.main.async {
+            self.onLocationUpdate?(coord)
+        }
     }
 }
 

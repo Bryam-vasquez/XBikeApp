@@ -15,7 +15,7 @@ struct CurrentRideView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                GoogleMapView(route: $viewModel.routeCoordinates)
+                GoogleMapView(route: $viewModel.routeCoordinates, initialCoordinate: viewModel.lastKnownCoordinate)
                     .ignoresSafeArea()
                 
                 if showPopup {
