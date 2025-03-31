@@ -39,7 +39,7 @@ class CurrentRideViewModel: ObservableObject {
     
     func startRide() {
         locationService.requestAuthorization()
-        ride = Ride(startTime: Date(), endTime: nil, totalDistance: 0, coordinates: [])
+        ride = Ride(startTime: Date(), endTime: nil, startAddress: nil, endAddress: nil, totalDistance: 0, coordinates: [])
         routeCoordinates.removeAll()
         distanceText = TextConstants.CurrentRide.distanceText
         isTracking = true
@@ -58,8 +58,18 @@ class CurrentRideViewModel: ObservableObject {
     
     func saveRide() {
         guard let ride = ride else { return }
-        rideRepository.save(ride: ride)
-        self.ride = nil
+        rideRepository.save(ride: ride) { [weak self] result in
+            guard let self = self else { return }
+            
+            switch result {
+            case .success(let success):
+                self.ride = nil
+            case .failure(let failure):
+                self.ride = nil
+            }
+            
+        }
+        
     }
     
     func deleteRide() {

@@ -15,6 +15,8 @@ struct Ride {
         guard let end = endTime else { return Date().timeIntervalSince(startTime) }
         return end.timeIntervalSince(startTime)
     }
+    var startAddress: String?
+    var endAddress: String?
     var totalDistance: CLLocationDistance
     var coordinates: [CLLocationCoordinate2D]
 }
