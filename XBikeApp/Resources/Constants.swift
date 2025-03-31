@@ -32,4 +32,9 @@ enum TextConstants {
             static let timeIcon = "time"
         }
     }
+    
+    enum CurrentRide {
+        static let distanceText = "0.00 km"
+        static let elapsedTimeText = "00:00:00"
+    }
 }
